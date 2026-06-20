@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import axios from 'axios';
-import Dashboard from './components/Dashboard'; 
+import Dashboard from './components/Dashboard';
 import { Zap, Palette, RefreshCw, LayoutTemplate } from 'lucide-react';
 
 function App() {
   const [isLogin, setIsLogin] = useState(true);
   
-  // Estado para controlar qué  mostrar
-  const [activeUser, setActiveUser] = useState(null);
+  const [activeUser, setActiveUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   
   // Estados del formulario
   const [name, setName] = useState('');
@@ -23,10 +25,13 @@ function App() {
       if (isLogin) {
         const response = await axios.post('http://localhost:3000/api/login', { email, password });
         
+        // Guardamos el token de seguridad
         localStorage.setItem('token', response.data.token);
-        setMessage("✅ " + response.data.message);
         
-        //  Guardamos el usuario en el estado para cambiar de pantalla de inmediato
+        // 🔥 CAMBIO 2: Guardamos todos los datos del usuario en el navegador
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        setMessage("✅ " + response.data.message);
         setActiveUser(response.data.user);
 
       } else {
@@ -43,20 +48,22 @@ function App() {
   };
 
   const handleLogout = () => {
+    // 🔥 CAMBIO 3: Limpiamos absolutamente todo al cerrar sesión
     localStorage.removeItem('token');
-    setActiveUser(null); // Regresa a la pantalla de login
+    localStorage.removeItem('user');
+    setActiveUser(null);
   };
 
+  // CONDICIONAL: Si el usuario ya inició sesión, mostramos el Dashboard
   if (activeUser) {
     return <Dashboard user={activeUser} onLogout={handleLogout} />;
   }
 
-  // Si no está logueado, muestra el login tradicional que ya teníamos
+  // --- INTERFAZ DE LOGIN Y REGISTRO ---
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
       <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         
-        {/* --- COLUMNA IZQUIERDA --- */}
         <div className="space-y-8">
           <div>
             <h1 className="text-5xl font-extrabold text-indigo-600 mb-3 tracking-tight">TaAlsk</h1>
@@ -92,7 +99,6 @@ function App() {
           </div>
         </div>
 
-        {/* --- COLUMNA DERECHA: Formulario --- */}
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
           <p className="text-center text-slate-500 text-sm mb-6">
             {isLogin ? 'Inicia sesión para continuar' : 'Crea una cuenta para comenzar'}
@@ -107,10 +113,10 @@ function App() {
           )}
 
           <div className="bg-slate-100 p-1 rounded-xl flex mb-6">
-            <button type="button" onClick={() => { setIsLogin(true); setMessage(''); }} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${isLogin ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}>
+            <button type="button" onClick={() => { setIsLogin(true); setMessage(''); }} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${isLogin ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}>
               Iniciar Sesión
             </button>
-            <button type="button" onClick={() => { setIsLogin(false); setMessage(''); }} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${!isLogin ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}>
+            <button type="button" onClick={() => { setIsLogin(false); setMessage(''); }} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${!isLogin ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}>
               Registrarse
             </button>
           </div>
