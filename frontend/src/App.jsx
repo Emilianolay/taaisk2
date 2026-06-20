@@ -6,7 +6,7 @@ import { Zap, Palette, RefreshCw, LayoutTemplate } from 'lucide-react';
 function App() {
   const [isLogin, setIsLogin] = useState(true);
   
-  // Estado para controlar qué pantalla mostrar
+  // Estado para controlar qué  mostrar
   const [activeUser, setActiveUser] = useState(null);
   
   // Estados del formulario
@@ -26,7 +26,7 @@ function App() {
         localStorage.setItem('token', response.data.token);
         setMessage("✅ " + response.data.message);
         
-        // 🎯 Guardamos el usuario en el estado para cambiar de pantalla de inmediato
+        //  Guardamos el usuario en el estado para cambiar de pantalla de inmediato
         setActiveUser(response.data.user);
 
       } else {
