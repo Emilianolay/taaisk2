@@ -63,3 +63,4 @@ export default function customizacion({ isDark, toggleDark, primaryColor, setPri
 
     )
 }
+
