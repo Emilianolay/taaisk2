@@ -1,6 +1,22 @@
 import { Flame, Trophy, CheckCircle, Palette, Trash2, Plus, User, Moon } from 'lucide-react';
+import {useState, useEffect} from 'react';
+import Customizacion from './customizacion';
 
 function Dashboard({ user, onLogout }) {
+  //diferentes colores de la barra de customizacion
+  const[isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+  const[isDark, setIsDark] = useState(false);
+  const[primaryColor, setPrimaryColor] = useState({
+    id: 'blue', hex: '#4f46e5', lightHex: '#818cf8'});
+  
+  useEffect(() => {
+    if(isDark){
+      document.documentElement.classList.add('dark');
+    }else{
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
   // Simularemos unas tareas iniciales de prueba para ver cómo se renderizan
   const tasks = [
     { id: '1', title: 'Diseñar la base de datos en PostgreSQL', status: 'TODO' },
@@ -13,28 +29,28 @@ function Dashboard({ user, onLogout }) {
   const completedTasks = tasks.filter(t => t.status === 'COMPLETED');
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-6 md:p-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300 p-6 md:p-12">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* --- HEADER --- */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">TaAlsk</h1>
+            <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white transition-colors duration-300 tracking-tight">TaAlsk</h1>
             <p className="text-slate-500 font-medium mt-1">Organiza tu trabajo y mantén tu racha activa</p>
           </div>
           
           {/* Botones de Acción Superiores */}
           <div className="flex items-center gap-3 self-end md:self-auto">
-            <button className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 shadow-sm transition-colors text-slate-500">
+            <button onClick={() => setIsCustomizerOpen(true)} className='p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 shadow-sm transition-colors text-slate-500'>
               <Palette className="w-5 h-5" />
             </button>
-            <button className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 shadow-sm transition-colors text-slate-500">
+            <button onClick= {() => setIsDark(!isDark)} className='p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 shadow-sm transition-colors text-slate-500'>  
               <Moon className="w-5 h-5" />
             </button>
             <button className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 shadow-sm transition-colors text-slate-500">
               <Trash2 className="w-5 h-5" />
             </button>
-            <button className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-slate-800 shadow-sm flex items-center gap-2 transition-colors text-sm">
+            <button className="bg-[var(--c_primario)] text-white hover:opacity-80 px-5 py-2.5 rounded-xl font-semibold shadow-sm flex items-center gap-2 transition-all duration-300 text-sm">
               <Plus className="w-4 h-4" /> Nueva Tarea
             </button>
             <button 
@@ -96,7 +112,7 @@ function Dashboard({ user, onLogout }) {
           <div className="bg-slate-100/70 rounded-2xl p-4 border border-slate-200/40">
             <div className="flex justify-between items-center mb-4 px-1">
               <h3 className="font-bold text-slate-700">Por Hacer</h3>
-              <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md text-xs font-bold">{todoTasks.length}</span>
+              <span className="bg-slate-200 dark:bg-slate-700 text-[var(--c_primario)] px-2 py-0.5 rounded-md text-xs font-bold transition-colors duration-300">{todoTasks.length}</span>
             </div>
             <div className="space-y-3 min-h-[350px]">
               {todoTasks.length === 0 ? (
@@ -115,7 +131,7 @@ function Dashboard({ user, onLogout }) {
           <div className="bg-slate-100/70 rounded-2xl p-4 border border-slate-200/40">
             <div className="flex justify-between items-center mb-4 px-1">
               <h3 className="font-bold text-slate-700">En Progreso</h3>
-              <span className="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md text-xs font-bold">{inProgressTasks.length}</span>
+              <span className="bg-slate-200 dark:bg-slate-700 text-[var(--c_primario)] px-2 py-0.5 rounded-md text-xs font-bold transition-colors duration-300">{inProgressTasks.length}</span>
             </div>
             <div className="space-y-3 min-h-[350px]">
               {inProgressTasks.length === 0 ? (
@@ -134,7 +150,7 @@ function Dashboard({ user, onLogout }) {
           <div className="bg-slate-100/70 rounded-2xl p-4 border border-slate-200/40">
             <div className="flex justify-between items-center mb-4 px-1">
               <h3 className="font-bold text-slate-700">Completado</h3>
-              <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md text-xs font-bold">{completedTasks.length}</span>
+              <span className="bg-slate-200 dark:bg-slate-700 text-[var(--c_primario)] px-2 py-0.5 rounded-md text-xs font-bold transition-colors duration-300">{completedTasks.length}</span>
             </div>
             <div className="space-y-3 min-h-[350px]">
               {completedTasks.length === 0 ? (
@@ -151,6 +167,11 @@ function Dashboard({ user, onLogout }) {
 
         </section>
       </div>
+      {/*Caja del panel*/}
+      {isCustomizerOpen && (
+        <Customizacion isDark={isDark} toggleDark={() => setIsDark(!isDark)} primaryColor={primaryColor} setPrimaryColor={setPrimaryColor}
+        onClose={() => setIsCustomizerOpen(false)}/>
+      )}
     </div>
   );
 }

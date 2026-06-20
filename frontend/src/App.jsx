@@ -7,7 +7,7 @@ function App() {
   const [isLogin, setIsLogin] = useState(true);
   
   // Estado para controlar qué  mostrar
-  const [activeUser, setActiveUser] = useState(null);
+  const [activeUser, setActiveUser] = useState({name: 'prueba', currentStreak: 10});
   
   // Estados del formulario
   const [name, setName] = useState('');

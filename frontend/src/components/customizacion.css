@@ -1,0 +1,181 @@
+/* ===== CONTENEDOR PRINCIPAL ===== */
+.panel {
+    width: 350px;
+    height: 100vh;
+    background-color: #ffffff;
+    border-left: 1px solid #e5e7eb;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.05);
+    color: #1f2937;
+    transition: background-color 0.3s, color 0.3s;
+    z-index: 50;
+}
+
+/* clase dark, oscuro */
+.dark .panel {
+    background-color: #1f2937;
+    border-left-color: #374151;
+    color: #f9fafb;
+}
+
+/* Encabezado */
+.cabeza_panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cabeza_panel h2 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.btncerrar {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+}
+
+.dark .btncerrar {
+    color: #9ca3af;
+}
+
+/* ===== SECCIONES ===== */
+.seccion_panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.seccion2 {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.seccion_panel h3 {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ayuda {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.dark .ayuda {
+    color: #9ca3af;
+}
+
+/* Botones de diferentes colores */
+.grid_colores {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.btn_color {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px; 
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    background-color: transparent;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    color: inherit;
+}
+
+.dark .btn_color {
+    border-color: #374151;
+}
+
+.btn_color:hover {
+    border-color: #d1d5db;
+}
+
+.dark .btn_color:hover {
+    border-color: #4b5563;
+}
+
+/* Cuando un botón es seleccionado */
+.btn_color.seleccionado {
+    border-color: #1f2937;
+}
+
+.dark .btn_color.seleccionado {
+    border-color: #f9fafb;
+}
+
+.circulo_color {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+}
+
+.nombre_color {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+
+/* switch*/
+.switch {
+    width: 44px;
+    height: 24px;
+    border-radius: 9999px;
+    background-color: #d1d5db;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.dark .switch {
+    background-color: #4b5563;
+}
+
+/* Aquí conectamos la variable CSS nativa a la caja */
+.switch.switch-activo {
+    background-color: var(--c_principal_fuerte);
+}
+
+.bolita {
+    width: 16px;
+    height: 16px;
+    background-color: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    transition: transform 0.3s;
+}
+
+.switch-activo .bolita {
+    transform: translateX(20px);
+}
+
+.dark .caja {
+    background-color: #111827;
+    border-color: #374151;
+}
+
+
+/* Pie de pagina */
+.pie_panel {
+    margin-top: auto;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.ayuda2 {
+    color: #9ca3af;
+}
