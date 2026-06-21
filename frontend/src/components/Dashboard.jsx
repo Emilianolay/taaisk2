@@ -234,7 +234,9 @@ function Dashboard({ user, onLogout }) {
             <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl text-emerald-500"><CheckCircle className="w-8 h-8" /></div>
             <div>
               <p className="text-sm font-bold text-slate-400 dark:text-blue-300 uppercase tracking-widest">Tareas Completadas</p>
-              <p className="text-3xl font-black text-slate-900 dark:text-white mt-0.5">{user?.tasksCompletedTotal || 0} <span className="text-lg font-bold text-slate-500 dark:text-blue-300">total</span></p>
+              <p className="text-3xl font-black text-slate-900 dark:text-white mt-0.5">
+                {completedTasks.length} <span className="text-lg font-bold text-slate-500 dark:text-blue-300">total</span>
+              </p>
             </div>
           </div>
         </section>
