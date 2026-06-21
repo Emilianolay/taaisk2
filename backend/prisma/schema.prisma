@@ -1,3 +1,4 @@
+// --- 1. CONFIGURACIÓN DE PRISMA Y BASE DE DATOS ---
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,35 +8,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- 2. TABLA DE USUARIOS ---
+model User {
+  id                  String   @id @default(uuid())
+  name                String?
+  email               String   @unique
+  password            String
+  currentStreak       Int      @default(0)
+  bestStreak          Int      @default(0)
+  tasksCompletedTotal Int      @default(0)
+  createdAt           DateTime @default(now())
+  
+  // Relación: Un usuario puede tener muchas tareas
+  tasks               Task[]
+}
+
+// --- 3. OPCIONES PARA LAS TAREAS ---
 enum TaskStatus {
   TODO
   IN_PROGRESS
   COMPLETED
 }
 
-model User {
-  id                  String    @id @default(uuid())
-  email               String    @unique
-  password            String
-  name                String?
-  currentStreak       Int       @default(0)
-  bestStreak          Int       @default(0)
-  tasksCompletedTotal Int       @default(0)
-  lastTaskCompletedAt DateTime?
-  isDarkMode          Boolean   @default(false)
-  accentColor         String    @default("#4F46E5")
-  tasks               Task[]
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
+// --- 4. TABLA DE TAREAS DETALLADA ---
 model Task {
-  id          String     @id @default(uuid())
+  id          String       @id @default(uuid())
   title       String
-  status      TaskStatus @default(TODO)
-  position    Int
+  description String?      
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(LOW)
+  dueDate     DateTime?    
+  fileUrl     String?      
+  tags        String[]     
+  position    Int          @default(0)
+  
+  // Relación: Esta tarea pertenece a un usuario específico
   userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  user        User         @relation(fields: [userId], references: [id])
+  createdAt   DateTime     @default(now())
 }

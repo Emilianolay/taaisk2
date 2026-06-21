@@ -3,15 +3,51 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const prisma = new PrismaClient();
 
-// Middlewares
 app.use(cors()); // Permite que React (puerto 5173) se comunique con Node (puerto 3000)
 app.use(express.json()); // Permite leer los datos en formato JSON
 
 const SECRET_KEY = process.env.JWT_SECRET || "secreto_temporal";
+
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    // Le ponemos la fecha actual al nombre para que nunca se repitan
+    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '-'));
+  }
+});
+const upload = multer({ storage: storage });
+
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se subió ningún archivo' });
+    }
+    // Devolvemos la URL local donde quedó guardada la imagen
+    const fileUrl = `http://localhost:3000/uploads/${req.file.filename}`;
+    res.json({ fileUrl });
+  } catch (error) {
+    console.error("Error al subir archivo:", error);
+    res.status(500).json({ error: 'Error al procesar la imagen' });
+  }
+});
+
+
 
 // 🚀 Endpoint: REGISTRO
 app.post('/api/register', async (req, res) => {
@@ -63,26 +99,30 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ error: "Error en el servidor" });
   }
 });
+// --- RUTA: CREAR TAREA ---
 app.post('/api/tasks', async (req, res) => {
   try {
-    const { title, userId } = req.body;
+    // 🔥 Agregamos fileUrl aquí
+    const { title, description, priority, status, dueDate, tags, userId, fileUrl } = req.body;
 
-    // Le decimos a Prisma que cree la tarea en PostgreSQL
     const newTask = await prisma.task.create({
       data: {
         title: title,
-        userId: userId,
-        status: 'TODO', // Nace en la columna "Por Hacer"
-        position: 0     // Por ahora le damos la posición 0 por defecto
+        description: description || null,
+        status: status || 'TODO',
+        priority: priority || 'LOW',
+        dueDate: dueDate ? new Date(dueDate) : null,
+        tags: tags || [],
+        fileUrl: fileUrl || null, // 🔥 Ahora sí guardamos el link de la imagen
+        position: 0,
+        userId: userId
       }
     });
 
-    // Respondemos con la tarea ya creada (incluyendo su ID real de la base de datos)
     res.json(newTask);
-    
   } catch (error) {
     console.error("Error creando tarea:", error);
-    res.status(500).json({ error: "No se pudo guardar la tarea en la base de datos" });
+    res.status(500).json({ error: "No se pudieron guardar los detalles de la tarea" });
   }
 });
 // --- RUTA PARA CARGAR LAS TAREAS DEL USUARIO ---
@@ -109,18 +149,45 @@ app.get('/api/tasks/:userId', async (req, res) => {
 app.put('/api/tasks/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
-    const { status } = req.body;
+    // 🔥 Agregamos fileUrl aquí
+    const { title, description, status, priority, dueDate, tags, fileUrl } = req.body;
 
-    // Le pedimos a Prisma que busque la tarea por su ID y le cambie el estatus
+    const dataToUpdate = {};
+    if (title !== undefined) dataToUpdate.title = title;
+    if (description !== undefined) dataToUpdate.description = description;
+    if (status !== undefined) dataToUpdate.status = status;
+    if (priority !== undefined) dataToUpdate.priority = priority;
+    if (tags !== undefined) dataToUpdate.tags = tags;
+    if (fileUrl !== undefined) dataToUpdate.fileUrl = fileUrl; // 🔥 Lo agregamos a la actualización
+    if (dueDate !== undefined) {
+      dataToUpdate.dueDate = dueDate ? new Date(dueDate) : null;
+    }
+
     const updatedTask = await prisma.task.update({
       where: { id: taskId },
-      data: { status: status }
+      data: dataToUpdate
     });
 
     res.json(updatedTask);
   } catch (error) {
     console.error("Error al actualizar la tarea:", error);
-    res.status(500).json({ error: "No se pudo actualizar la tarea en la base de datos" });
+    res.status(500).json({ error: "No se pudo actualizar la tarea" });
+  }
+});
+
+// --- NUEVA RUTA: ELIMINAR TAREA ---
+app.delete('/api/tasks/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    await prisma.task.delete({
+      where: { id: taskId }
+    });
+
+    res.json({ message: "Tarea eliminada correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar la tarea:", error);
+    res.status(500).json({ error: "No se pudo eliminar la tarea" });
   }
 });
 // Iniciar el servidor
