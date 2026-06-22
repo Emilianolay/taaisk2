@@ -190,6 +190,58 @@ app.delete('/api/tasks/:taskId', async (req, res) => {
     res.status(500).json({ error: "No se pudo eliminar la tarea" });
   }
 });
+
+//Editamos el perfil del usuario
+//Para su nombre 
+app.put('/api/users/:userId/profile', async (req, res) => {
+  try{
+    const {userId} = req.params;
+    const {nuevoNombre} = req.body;
+
+    const usActualizado = await prisma.user.update({
+      where: {id: userId},
+      data: {name: nuevoNombre} // le pasamos el nuevo nombre a la columna
+    });
+
+    res.json(usActualizado);
+  }catch(error){
+    console.error("Error al actualizar el perfil:", error);
+    res.status(500).json({ error: "No se actualizo el perfil"});
+  }
+});
+
+//Para su contraseña
+app.put('/api/users/:userId/password', async (req, res) =>{
+  try{
+    const {userId} = req.params;
+    const {contraVieja, contraNueva} = req.body;
+    //Aqui buscamos el usuario
+    const usEncontrado = await prisma.user.findUnique({ where: { id: userId}});
+    if(!usEncontrado){
+      return res.status(404).json({ error: "Usuario no encontrado"});
+    }
+
+    //Revisamos si la contra vieja esta bien
+    const contraValida = await bcrypt.compare(contraVieja,usEncontrado.password);
+    if(!contraValida){
+      return res.status(401).json({error: "La contraseña actual es incorrecta"});
+    }
+
+    // Encriptamos la contra nueva para que sea segura
+    const encrNuevaContra = await bcrypt.hash(contraNueva, 10);
+
+    //La volvemos a guardar en la base
+    await prisma.user.update({
+      where: {id: userId},
+      data: {password: encrNuevaContra}
+    });
+    res.json({ message: "Contraseña actualizada con exito"});
+  }catch (error){
+    console.error("Error al cambiar contraseña:", error);
+    res.status(500).json({error: "Error al cambiar la contraseña"});
+  }
+});
+
 // Iniciar el servidor
 const PORT = 3000;
 app.listen(PORT, () => {

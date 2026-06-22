@@ -9,6 +9,9 @@ function Dashboard({ user, onLogout }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [Editprofile, setIsEditProfile] = useState(false);
   const [ChangePass, setIsChangePass] = useState(false);
+  const [nuevoNombre, setNuevoNombre] = useState(user?.name || '');
+  const [contraVieja, setContraVieja] = useState('');
+  const [contraNueva, setContraNueva] = useState('');
   const [isDark, setIsDark] = useState(false);
   const [primaryColor, setPrimaryColor] = useState({ id: 'blue', hex: '#4f46e5', lightHex: '#818cf8' });
 
@@ -184,6 +187,35 @@ function Dashboard({ user, onLogout }) {
       });
     } catch (error) {
       console.error("Error al guardar la posición:", error);
+    }
+  };
+
+  //Funciones de guardar y actualizar para el perfil
+  const guardarPerfil = async () => {
+    if(!nuevoNombre.trim()) return alert("El nombre no puede estar vacío");
+    try {
+      await axios.put(`http://localhost:3000/api/users/${user.id}/profile`, {
+        nuevoNombre: nuevoNombre
+      });
+      alert("Perfil actualizado, vuelve a entrar para ver los cambios.");
+      setIsEditProfile(false); //Cerramosla ventana
+    }catch(error){
+      alert("Error al actualizar el perfil");
+    }
+  };
+
+  const actualizarContra = async () => {
+    if(!contraVieja || !contraNueva) return alert("Por favor llena ambos campos");
+    try {
+      await axios.put(`http://localhost:3000/api/users/${user.id}/password`, {
+        contraVieja: contraVieja,
+        contraNueva: contraNueva
+      });
+      alert("Contraseña actualizada, se cerrará tu sesion por seguridad(:");
+      setIsChangePass(false);
+      onLogout(); //Cerramos la sesion automaticamente
+    }catch (error) {
+      alert(error.response?.data?.error || "Error al cambiar contraseña");
     }
   };
 
@@ -483,21 +515,20 @@ function Dashboard({ user, onLogout }) {
             </div>
             <div>
               <label className='block text-xs font-bold text-slate-600 dark:text-blue-200 uppercase tracking-wider mb-1'>Nombre</label>
-              <input type='text' defaultValue={user?.name}
+              <input type='text' value = {nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)}
               className='w-full bg-slate-50 dark:bg-[#020166] border border-slate-200 dark:border-[#030188] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--c_primario)] text-slate-800 dark:text-blue-50 text-sm'/>
             </div>
             <div className='flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-[#030188] mt-6'>
               <button onClick={() => setIsEditProfile(false)}
               className='px-5 py-2.5 rounded-xl font-semibold text-slate-600 dark:text-blue-200 hover:bg-slate-100 dark:hover:bg-[#020166] transition-colors cursor-pointer text-sm'>Cancelar</button>
-              <button onClick={() => {alert("Debemos de corregir la base de datos");
-                setIsEditProfile(false);}}
+              <button onClick={guardarPerfil}
                 className='bg-[var(--c_primario)] text-white px-5 py-2.5 rounded-xl font-bold hover:opacity-90 shadow-md transition-colors cursor-pointer text-sm'>Guardar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/*Cambiar contrase;a*/}
+      {/*Cambiar contraseña*/}
       {ChangePass && (
         <div className='fixed inset-0 bg-slate-900/40 dark:bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4'>
           <div className='bg-white dark:bg-[#01004A] border border-slate-200 dark:border-[#030188] rounded-3xl shadow-2xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200'>
@@ -511,19 +542,18 @@ function Dashboard({ user, onLogout }) {
             <div className='space-y-4'>
               <div>
                 <label className='block text-xs font-bold text-slate-600 dark:text-blue-200 uppercase tracking-wider mb-1'>Contraseña Actual</label>
-                <input type='password' placeholder='........'
+                <input type='password' value={contraVieja} onChange={(e) => setContraVieja(e.target.value)} placeholder='........'
                 className='w-full bg-slate-50 dark:bg-[#020166] border border-slate-200 dark:border-[#030188] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--c_primario)] text-slate-800 dark:text-blue-50 text-sm'/>
               </div>
             </div>
             <label className='block text-xs font-bold text-slate-600 dark:text-blue-200 uppercase tracking-wider mb-1'>Nueva Contraseña</label>
-            <input type='password' placeholder='........'
+            <input type='password' value={contraNueva} onChange={(e) => setContraNueva(e.target.value)} placeholder='........'
             className='w-full bg-slate-50 dark:bg-[#020166] border border-slate-200 dark:border-[#030188] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--c_primario)] text-slate-800 dark:text-blue-50 text-sm'/>
   
             <div className='flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-[#030188] mt-6'>
               <button onClick={() => setIsChangePass(false)}
               className='px-5 py-2.5 rounded-xl font-semibold text-slate-600 dark:text-blue-200 hover:bg-slate-100 dark:hover:bg-[#020166] transition-colors cursor-pointer text-sm'>Cancelar</button>
-              <button onClick={() => {alert("Debemos de actualizar la database");
-                setIsChangePass(false);}}
+              <button onClick={actualizarContra}
                 className='bg-red-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-red-700 shadow-md transition-colors cursor-pointer text-sm'>Actualizar</button>
             </div>
           </div>
