@@ -13,34 +13,34 @@ const prisma = new PrismaClient();
 app.use(cors()); // Permite que React (puerto 5173) se comunique con Node (puerto 3000)
 app.use(express.json()); // Permite leer los datos en formato JSON
 
-const SECRET_KEY = process.env.JWT_SECRET || "secreto_temporal";
+const CLAVE_SECRETA = process.env.JWT_SECRET || "secreto_temporal";
 
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+const directorioSubidas = path.join(__dirname, 'uploads');
+if (!fs.existsSync(directorioSubidas)) {
+  fs.mkdirSync(directorioSubidas);
 }
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+const almacenamiento = multer.diskStorage({
+  destination: function (req, archivo, cb) {
     cb(null, 'uploads/');
   },
-  filename: function (req, file, cb) {
+  filename: function (req, archivo, cb) {
     // Le ponemos la fecha actual al nombre para que nunca se repitan
-    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '-'));
+    cb(null, Date.now() + '-' + archivo.originalname.replace(/\s+/g, '-'));
   }
 });
-const upload = multer({ storage: storage });
+const subir = multer({ storage: almacenamiento });
 
-app.post('/api/upload', upload.single('file'), (req, res) => {
+app.post('/api/upload', subir.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No se subió ningún archivo' });
     }
     // Devolvemos la URL local donde quedó guardada la imagen
-    const fileUrl = `http://localhost:3000/uploads/${req.file.filename}`;
-    res.json({ fileUrl });
+    const urlArchivo = `http://localhost:3000/uploads/${req.file.filename}`;
+    res.json({ fileUrl: urlArchivo }); // Mantenemos fileUrl por ahora para que el front lo entienda si no se ha cambiado
   } catch (error) {
     console.error("Error al subir archivo:", error);
     res.status(500).json({ error: 'Error al procesar la imagen' });
@@ -49,23 +49,23 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 
 
 
-// 🚀 Endpoint: REGISTRO
+// Endpoint: REGISTRO
 app.post('/api/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
     // 1. Verificar si el usuario ya existe
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
+    const usuarioExistente = await prisma.usuario.findUnique({ where: { correo: email } });
+    if (usuarioExistente) {
       return res.status(400).json({ error: "El email ya está registrado" });
     }
 
     // 2. Encriptar la contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const contrasenaEncriptada = await bcrypt.hash(password, 10);
 
     // 3. Crear el usuario en la base de datos
-    const newUser = await prisma.user.create({
-      data: { name, email, password: hashedPassword }
+    const nuevoUsuario = await prisma.usuario.create({
+      data: { nombre: name, correo: email, contrasena: contrasenaEncriptada }
     });
 
     res.status(201).json({ message: "Usuario creado exitosamente" });
@@ -74,101 +74,112 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// 🔑 Endpoint: LOGIN
+// Endpoint: LOGIN
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
     // 1. Buscar al usuario
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
+    const usuario = await prisma.usuario.findUnique({ where: { correo: email } });
+    if (!usuario) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
     // 2. Comparar contraseñas
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
+    const contrasenaValida = await bcrypt.compare(password, usuario.contrasena);
+    if (!contrasenaValida) {
       return res.status(401).json({ error: "Contraseña incorrecta" });
     }
 
     // 3. Generar Token de sesión
-    const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: usuario.id }, CLAVE_SECRETA, { expiresIn: '7d' });
 
-    res.json({ message: "Login exitoso", token, user: { id: user.id, name: user.name, email: user.email } });
+    res.json({ message: "Login exitoso", token, user: { id: usuario.id, name: usuario.nombre, email: usuario.correo } });
   } catch (error) {
     res.status(500).json({ error: "Error en el servidor" });
   }
 });
+
 // --- RUTA: CREAR TAREA ---
 app.post('/api/tasks', async (req, res) => {
   try {
-    // 🔥 Agregamos fileUrl aquí
+    // Aceptamos las claves del frontend y mapeamos a la BD en español
     const { title, description, priority, status, dueDate, tags, userId, fileUrl } = req.body;
 
-    const newTask = await prisma.task.create({
+    // Mapeo temporal de enums
+    const mapaEstado = { 'TODO': 'porHacer', 'IN_PROGRESS': 'enProgreso', 'COMPLETED': 'completado', 'porHacer': 'porHacer', 'enProgreso': 'enProgreso', 'completado': 'completado' };
+    const mapaPrioridad = { 'LOW': 'baja', 'MEDIUM': 'media', 'HIGH': 'alta', 'baja': 'baja', 'media': 'media', 'alta': 'alta' };
+
+    const estadoEspanol = mapaEstado[status] || 'porHacer';
+    const prioridadEspanol = mapaPrioridad[priority] || 'baja';
+
+    const nuevaTarea = await prisma.tarea.create({
       data: {
-        title: title,
-        description: description || null,
-        status: status || 'TODO',
-        priority: priority || 'LOW',
-        dueDate: dueDate ? new Date(dueDate) : null,
-        tags: tags || [],
-        fileUrl: fileUrl || null, // 🔥 Ahora sí guardamos el link de la imagen
-        position: 0,
-        userId: userId
+        titulo: title,
+        descripcion: description || null,
+        estado: estadoEspanol,
+        prioridad: prioridadEspanol,
+        fechaLimite: dueDate ? new Date(dueDate) : null,
+        etiquetas: tags || [],
+        urlArchivo: fileUrl || null,
+        posicion: 0,
+        idUsuario: userId
       }
     });
 
-    res.json(newTask);
+    res.json(nuevaTarea);
   } catch (error) {
     console.error("Error creando tarea:", error);
     res.status(500).json({ error: "No se pudieron guardar los detalles de la tarea" });
   }
 });
+
 // --- RUTA PARA CARGAR LAS TAREAS DEL USUARIO ---
 app.get('/api/tasks/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Le pedimos a Prisma que busque todas las tareas de este usuario
-    const userTasks = await prisma.task.findMany({
+    const tareasUsuario = await prisma.tarea.findMany({
       where: {
-        userId: userId
+        idUsuario: userId
       },
       orderBy: {
-        createdAt: 'asc' // Las ordenamos desde la más vieja a la más nueva
+        fechaCreacion: 'asc' // Las ordenamos desde la más vieja a la más nueva
       }
     });
 
-    res.json(userTasks);
+    res.json(tareasUsuario);
   } catch (error) {
     console.error("Error al cargar tareas:", error);
     res.status(500).json({ error: "Error al obtener las tareas de la base de datos" });
   }
 });
+
 app.put('/api/tasks/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
-    // 🔥 Agregamos fileUrl aquí
     const { title, description, status, priority, dueDate, tags, fileUrl } = req.body;
 
-    const dataToUpdate = {};
-    if (title !== undefined) dataToUpdate.title = title;
-    if (description !== undefined) dataToUpdate.description = description;
-    if (status !== undefined) dataToUpdate.status = status;
-    if (priority !== undefined) dataToUpdate.priority = priority;
-    if (tags !== undefined) dataToUpdate.tags = tags;
-    if (fileUrl !== undefined) dataToUpdate.fileUrl = fileUrl; // 🔥 Lo agregamos a la actualización
+    const mapaEstado = { 'TODO': 'porHacer', 'IN_PROGRESS': 'enProgreso', 'COMPLETED': 'completado', 'porHacer': 'porHacer', 'enProgreso': 'enProgreso', 'completado': 'completado' };
+    const mapaPrioridad = { 'LOW': 'baja', 'MEDIUM': 'media', 'HIGH': 'alta', 'baja': 'baja', 'media': 'media', 'alta': 'alta' };
+
+    const datosAActualizar = {};
+    if (title !== undefined) datosAActualizar.titulo = title;
+    if (description !== undefined) datosAActualizar.descripcion = description;
+    if (status !== undefined) datosAActualizar.estado = mapaEstado[status] || status;
+    if (priority !== undefined) datosAActualizar.prioridad = mapaPrioridad[priority] || priority;
+    if (tags !== undefined) datosAActualizar.etiquetas = tags;
+    if (fileUrl !== undefined) datosAActualizar.urlArchivo = fileUrl;
     if (dueDate !== undefined) {
-      dataToUpdate.dueDate = dueDate ? new Date(dueDate) : null;
+      datosAActualizar.fechaLimite = dueDate ? new Date(dueDate) : null;
     }
 
-    const updatedTask = await prisma.task.update({
+    const tareaActualizada = await prisma.tarea.update({
       where: { id: taskId },
-      data: dataToUpdate
+      data: datosAActualizar
     });
 
-    res.json(updatedTask);
+    res.json(tareaActualizada);
   } catch (error) {
     console.error("Error al actualizar la tarea:", error);
     res.status(500).json({ error: "No se pudo actualizar la tarea" });
@@ -180,7 +191,7 @@ app.delete('/api/tasks/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
     
-    await prisma.task.delete({
+    await prisma.tarea.delete({
       where: { id: taskId }
     });
 
@@ -196,11 +207,11 @@ app.delete('/api/tasks/:taskId', async (req, res) => {
 app.put('/api/users/:userId/profile', async (req, res) => {
   try{
     const {userId} = req.params;
-    const {nuevoNombre} = req.body;
+    const {nuevoNombre} = req.body; // Esto sí viene como "nuevoNombre" del frontend
 
-    const usActualizado = await prisma.user.update({
+    const usActualizado = await prisma.usuario.update({
       where: {id: userId},
-      data: {name: nuevoNombre} // le pasamos el nuevo nombre a la columna
+      data: {nombre: nuevoNombre}
     });
 
     res.json(usActualizado);
@@ -214,26 +225,23 @@ app.put('/api/users/:userId/profile', async (req, res) => {
 app.put('/api/users/:userId/password', async (req, res) =>{
   try{
     const {userId} = req.params;
-    const {contraVieja, contraNueva} = req.body;
-    //Aqui buscamos el usuario
-    const usEncontrado = await prisma.user.findUnique({ where: { id: userId}});
+    const {contraVieja, contraNueva} = req.body; // Vienen en español del frontend
+    
+    const usEncontrado = await prisma.usuario.findUnique({ where: { id: userId}});
     if(!usEncontrado){
       return res.status(404).json({ error: "Usuario no encontrado"});
     }
 
-    //Revisamos si la contra vieja esta bien
-    const contraValida = await bcrypt.compare(contraVieja,usEncontrado.password);
+    const contraValida = await bcrypt.compare(contraVieja, usEncontrado.contrasena);
     if(!contraValida){
       return res.status(401).json({error: "La contraseña actual es incorrecta"});
     }
 
-    // Encriptamos la contra nueva para que sea segura
     const encrNuevaContra = await bcrypt.hash(contraNueva, 10);
 
-    //La volvemos a guardar en la base
-    await prisma.user.update({
+    await prisma.usuario.update({
       where: {id: userId},
-      data: {password: encrNuevaContra}
+      data: {contrasena: encrNuevaContra}
     });
     res.json({ message: "Contraseña actualizada con exito"});
   }catch (error){
@@ -243,7 +251,7 @@ app.put('/api/users/:userId/password', async (req, res) =>{
 });
 
 // Iniciar el servidor
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Servidor Backend corriendo en http://localhost:${PORT}`);
+const PUERTO = 3000;
+app.listen(PUERTO, () => {
+  console.log(`Servidor Backend corriendo en http://localhost:${PUERTO}`);
 });

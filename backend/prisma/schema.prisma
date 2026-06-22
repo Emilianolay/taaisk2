@@ -1,4 +1,4 @@
-// --- 1. CONFIGURACIÓN DE PRISMA Y BASE DE DATOS ---
+//  CONFIGURACION DE PRISMA Y BASE DE DATOS
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,48 +8,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- 2. TABLA DE USUARIOS ---
-model User {
-  id                  String   @id @default(uuid())
-  name                String?
-  email               String   @unique
-  password            String
-  currentStreak       Int      @default(0)
-  bestStreak          Int      @default(0)
-  tasksCompletedTotal Int      @default(0)
-  createdAt           DateTime @default(now())
+// TABLA DE USUARIOS
+model Usuario {
+  id String @id @default(uuid())
+  nombre String?
+  correo String @unique
+  contrasena String
+  rachaActual Int @default(0)
+  mejorRacha Int @default(0)
+  tareasCompletadas Int @default(0)
+  fechaCreacion DateTime @default(now())
   
-  // Relación: Un usuario puede tener muchas tareas
-  tasks               Task[]
+  // Relacion: Un usuario puede tener muchas tareas
+  tareas              Tarea[]
 }
 
-// --- 3. OPCIONES PARA LAS TAREAS ---
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  COMPLETED
+// OPCIONES PARA LAS TAREAS
+enum EstadoTarea {
+  POR_HACER
+  EN_PROGRESO
+  COMPLETADO
 }
 
-enum TaskPriority {
-  LOW
-  MEDIUM
-  HIGH
+enum PrioridadTarea {
+  BAJA
+  MEDIA
+  ALTA
 }
 
-// --- 4. TABLA DE TAREAS DETALLADA ---
-model Task {
-  id          String       @id @default(uuid())
-  title       String
-  description String?      
-  status      TaskStatus   @default(TODO)
-  priority    TaskPriority @default(LOW)
-  dueDate     DateTime?    
-  fileUrl     String?      
-  tags        String[]     
-  position    Int          @default(0)
+// TABLA DE TAREAS CON TODOS SUS DETALLES
+model Tarea {
+  id String @id @default(uuid())
+  titulo String
+  descripcion String?      
+  estado EstadoTarea @default(POR_HACER)
+  prioridad PrioridadTarea @default(BAJA)
+  fechaLimite DateTime?    
+  urlArchivo String?      
+  etiquetas String[]     
+  posicion Int @default(0)
   
-  // Relación: Esta tarea pertenece a un usuario específico
-  userId      String
-  user        User         @relation(fields: [userId], references: [id])
-  createdAt   DateTime     @default(now())
+  // Esta tarea pertenece a un usuario en especifico
+  idUsuario String
+  usuario Usuario @relation(fields: [idUsuario], references: [id])
+  fechaCreacion DateTime @default(now())
 }
